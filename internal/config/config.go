@@ -3,7 +3,9 @@ package config
 import "time"
 
 type Config struct {
-	GoBackNWindowMaxValue       uint8
+	GoBackNMaxSequence          uint8
+	GoBackNWindowSize           uint8
+	HelloMessage                string
 	IPAddrString                string
 	ServerPort                  int
 	VirtualSocketDelayRate      float64
@@ -14,7 +16,9 @@ type Config struct {
 }
 
 var DefaultConfig = Config{
-	GoBackNWindowMaxValue:       64,
+	GoBackNMaxSequence:          ^uint8(0),
+	GoBackNWindowSize:           5,
+	HelloMessage:                "HELLO",
 	IPAddrString:                "127.0.0.1",
 	ServerPort:                  42069,
 	VirtualSocketDelayRate:      0.2,
@@ -23,4 +27,3 @@ var DefaultConfig = Config{
 	VirtualSocketErrorRate:      0.2,
 	ReliabilityLayerAckWaitTime: 1000 * time.Millisecond,
 }
-
