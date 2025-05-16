@@ -1,7 +1,6 @@
 package clientprotocol
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/hannesi/go-back-n/internal/config"
@@ -59,11 +58,6 @@ func (client GoBackNProtocolClient) sendHello() (reliability.HelloResponse, erro
 }
 
 func (client GoBackNProtocolClient) Send(data [][]byte) error {
-	client.appendToBuffer(data)
-	fmt.Printf("%+v\n", client.buffer)
-	return nil
-}
-
-func (client GoBackNProtocolClient) appendToBuffer(data [][]byte) {
 	client.buffer = append(client.buffer, data...)
+	return nil
 }
