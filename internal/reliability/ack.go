@@ -35,20 +35,20 @@ func (a *AckData) Serialize() ([]byte, error) {
 }
 
 // Deserializes ack data from the following format: [sequence, ...msg]
-func DeserializeAckBytes(data []byte) (*AckData, error) {
+func DeserializeAckBytes(data []byte) (AckData, error) {
 	buffer := bytes.NewReader(data)
 
 	seq, err := buffer.ReadByte()
 	if err != nil {
-		return nil, err
+		return AckData{}, err
 	}
 
 	ack, err := io.ReadAll(buffer)
 	if err != nil {
-		return nil, err
+		return AckData{}, err
 	}
 	
-	ackData := &AckData{
+	ackData := AckData{
 		Ack: string(ack),
 		Sequence: seq,
 	}

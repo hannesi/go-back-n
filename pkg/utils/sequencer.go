@@ -5,8 +5,8 @@ type Sequencer struct {
     max uint8
 }
 
-func NewSequencer(max uint8) *Sequencer {
-    return &Sequencer{
+func NewSequencer(max uint8) Sequencer {
+    return Sequencer{
         current: max,
         max: max,
     }

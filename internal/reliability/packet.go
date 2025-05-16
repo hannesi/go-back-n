@@ -29,12 +29,12 @@ func (p *ReliableDataTransferPacket) computeChecksum() uint32 {
 }
 
 // Returns true if the rdt packet's checksum matches the packet's payload's calculated checksum.
-func (p *ReliableDataTransferPacket) IsChecksumValid() bool {
+func (p ReliableDataTransferPacket) IsChecksumValid() bool {
     return p.Checksum == p.computeChecksum()
 }
 
 // Serialize a rdt packet into transferable form.
-func (p *ReliableDataTransferPacket) Serialize() ([]byte, error) {
+func (p ReliableDataTransferPacket) Serialize() ([]byte, error) {
     buffer := new(bytes.Buffer)
 
     err := binary.Write(buffer, binary.BigEndian, p.Checksum)
@@ -56,29 +56,29 @@ func (p *ReliableDataTransferPacket) Serialize() ([]byte, error) {
 }
 
 
-// Deserialize a byte array into a rdt packet.
-func Deserialize(data []byte) (*ReliableDataTransferPacket, error) {
+// DeserializeReliableDataTransferPacket a byte array into a rdt packet.
+func DeserializeReliableDataTransferPacket(data []byte) (ReliableDataTransferPacket, error) {
     buffer := bytes.NewReader(data)
 
     var checksum uint32
 
     err := binary.Read(buffer, binary.BigEndian, &checksum)
     if err != nil {
-        return nil, err
+        return ReliableDataTransferPacket{}, err
     }
 
     sequence, err := buffer.ReadByte()
     if err != nil {
-        return nil, err
+        return ReliableDataTransferPacket{}, err
     }
 
     payload := make([]byte, buffer.Len())
     _, err = buffer.Read(payload)
     if err != nil {
-        return nil, err
+        return ReliableDataTransferPacket{}, err
     }
 
-    return &ReliableDataTransferPacket{
+    return ReliableDataTransferPacket{
         Payload: payload,
         Sequence: sequence,
         Checksum: checksum,
