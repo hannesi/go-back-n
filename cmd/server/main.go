@@ -30,7 +30,10 @@ func main() {
 	reliabilityLayer := serverprotocol.NewGoBackNProtocolServer(socket)
 
 	for {
-		reliabilityLayer.Receive()
+		err := reliabilityLayer.Receive()
+		if err != nil {
+			log.Fatal("lol")
+		}
 	}
 
 }

@@ -14,8 +14,8 @@ type ReliableDataTransferPacket struct {
 }
 
 // Create a new rdt packet from provided payload. The checksum is calculated automagically.
-func NewReliableDataTransferPacket(sequence uint8, payload []byte) *ReliableDataTransferPacket {
-    packet := &ReliableDataTransferPacket{
+func NewReliableDataTransferPacket(sequence uint8, payload []byte) ReliableDataTransferPacket {
+    packet := ReliableDataTransferPacket{
         Sequence: sequence,
         Payload: payload,
     }

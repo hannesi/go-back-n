@@ -2,28 +2,38 @@ package reliability
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/hannesi/go-back-n/internal/config"
 )
 
-type HelloResponse struct {
-	CurrentSequence uint8
-	MaxSequence     uint8
-	WindowSize      uint8
+type HelloError struct {
 }
 
-func NewHelloResponse(currentSequence uint8, maxSequence uint8, windowSize uint8) HelloResponse {
+func (e HelloError) Error() string {
+	return fmt.Sprint("No hello response from server.")
+}
+
+// TODO: obsolete
+
+type HelloResponse struct {
+	ExpectedSequence uint8
+	MaxSequence      uint8
+	WindowSize       uint8
+}
+
+func NewHelloResponse(expectedSequence uint8, maxSequence uint8, windowSize uint8) HelloResponse {
 	return HelloResponse{
-		CurrentSequence: currentSequence,
-		MaxSequence: maxSequence,
-		WindowSize: windowSize,
+		ExpectedSequence: expectedSequence,
+		MaxSequence:      maxSequence,
+		WindowSize:       windowSize,
 	}
 }
 
 func (res HelloResponse) Serialize() ([]byte, error) {
 	buffer := new(bytes.Buffer)
 
-	err := buffer.WriteByte(res.CurrentSequence)
+	err := buffer.WriteByte(res.ExpectedSequence)
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +70,9 @@ func DeserializeHelloResponse(data []byte) (HelloResponse, error) {
 	}
 
 	return HelloResponse{
-		CurrentSequence: currentSequence,
-		MaxSequence:     maxSequence,
-		WindowSize:      windowSize,
+		ExpectedSequence: currentSequence,
+		MaxSequence:      maxSequence,
+		WindowSize:       windowSize,
 	}, nil
 }
 

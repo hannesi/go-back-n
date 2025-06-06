@@ -3,24 +3,21 @@ package serverprotocol
 import (
 	"log"
 	"net"
+	"time"
 
 	"github.com/hannesi/go-back-n/internal/config"
 	"github.com/hannesi/go-back-n/internal/reliability"
 )
 
 type GoBackNProtocolServer struct {
-	Socket         *net.UDPConn
-	lastOkSequence uint8
-	maxSequence    uint8
-	windowSize     uint8
+	Socket           *net.UDPConn
+	expectedSequence uint8
 }
 
 func NewGoBackNProtocolServer(socket *net.UDPConn) GoBackNProtocolServer {
 	return GoBackNProtocolServer{
-		Socket:         socket,
-		lastOkSequence: 0,
-		maxSequence:    config.DefaultConfig.GoBackNMaxSequence,
-		windowSize:     config.DefaultConfig.GoBackNWindowSize,
+		Socket:           socket,
+		expectedSequence: 0,
 	}
 }
 
@@ -32,30 +29,42 @@ func (server GoBackNProtocolServer) Receive() error {
 	}
 
 	if reliability.IsHelloMessage(buffer[:n]) {
+		// reset sequencer on HELLO
+		server.expectedSequence = 0
 		server.sendHelloResponse(addr)
 		return server.Receive()
 	}
 
 	packet, err := reliability.DeserializeReliableDataTransferPacket(buffer[:n])
+	time.Sleep(100 * time.Millisecond)
+
+	log.Println(string(packet.Payload))
 
 	// if bit error is detected or a packet with unexpected sequence is received
-	if !packet.IsChecksumValid() || server.lastOkSequence+1 != packet.Sequence {
+	if !packet.IsChecksumValid() || server.expectedSequence != packet.Sequence {
+		server.sendAck(addr)
 		return server.Receive()
 	}
 
-	server.lastOkSequence = packet.Sequence
+	// if packet is ok, increase expectedSequence and send ack
+	server.expectedSequence++
+	server.sendAck(addr)
 
-	ack := reliability.NewAckPacket("ACK", server.lastOkSequence)
-	ackPacket, err := ack.Serialize()
+	return server.Receive()
+}
+
+func (server GoBackNProtocolServer) sendAck(dest *net.UDPAddr) {
+	ack := reliability.NewAckPacket("ACK", server.expectedSequence)
+	serializedAck, err := ack.Serialize()
+	log.Printf("Sending %v", serializedAck)
+	log.Printf("seq: %d", server.expectedSequence)
 	if err != nil {
-		log.Fatal("Server failed to serialize an ack packet.")
+		log.Println("Server failed to serialize an ack packet. Trying again.")
+		server.sendAck(dest)
 	}
-	server.Socket.WriteToUDP(ackPacket, addr)
-	return nil
+	server.Socket.WriteToUDP(serializedAck, dest)
 }
 
 func (server GoBackNProtocolServer) sendHelloResponse(addr *net.UDPAddr) {
-	helloResponse := reliability.NewHelloResponse(server.lastOkSequence, server.maxSequence, server.windowSize)
-	res, _ := helloResponse.Serialize()
-	server.Socket.WriteToUDP(res, addr)
+	server.Socket.WriteToUDP([]byte(config.DefaultConfig.HelloMessage), addr)
 }

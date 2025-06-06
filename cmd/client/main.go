@@ -23,7 +23,7 @@ func main() {
 	gbn, err := clientprotocol.NewGoBackNProtocolClient(socket)
 
 	if err != nil {
-		panic("Failed to start GBN protocol client.")
+		panic(fmt.Sprintf("Failed to start GBN protocol client: %v", err))
 	}
 
 	var messages [][]byte

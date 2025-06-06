@@ -19,7 +19,7 @@ type VirtualSocket struct {
 }
 
 // Creates a new virtual socket.
-func NewVirtualSocket() (*VirtualSocket, error) {
+func NewVirtualSocket() (VirtualSocket, error) {
 	destAddr := net.UDPAddr{
 		IP:   net.ParseIP(config.DefaultConfig.IPAddrString),
 		Port: config.DefaultConfig.ServerPort,
@@ -33,12 +33,12 @@ func NewVirtualSocket() (*VirtualSocket, error) {
 	socket, err := net.DialUDP("udp", &socketAddr, &destAddr)
 
 	if err != nil {
-		return nil, err
+		return VirtualSocket{}, err
 	}
 
 	log.Println("Virtual socket initialized.")
 
-	return &VirtualSocket{
+	return VirtualSocket{
 		socket:    socket,
 		delay:     config.DefaultConfig.VirtualSocketDelay,
 		delayRate: config.DefaultConfig.VirtualSocketDelayRate,

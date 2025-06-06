@@ -18,10 +18,6 @@ func (s *Sequencer) SetCurrentValue(current uint8) {
 
 func (s *Sequencer) Next() uint8 {
     s.current++
-    if s.current > s.max {
-        s.current = 0
-    }
-    
     return s.current
 }
 
