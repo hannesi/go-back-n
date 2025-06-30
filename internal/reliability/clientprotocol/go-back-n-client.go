@@ -3,6 +3,7 @@ package clientprotocol
 import (
 	"log"
 	"math"
+	"slices"
 	"time"
 
 	"github.com/hannesi/go-back-n/internal/config"
@@ -12,10 +13,10 @@ import (
 )
 
 type GoBackNProtocolClient struct {
-	socket                virtualsocket.VirtualSocket
-	sequencer             utils.Sequencer
-	packetQueue           []reliability.ReliableDataTransferPacket
-	highestAckSeqReceived uint8
+	socket    virtualsocket.VirtualSocket
+	sequencer utils.Sequencer
+	// packetQueue could be a struct of its own with methods
+	packetQueue []reliability.ReliableDataTransferPacket
 }
 
 func NewGoBackNProtocolClient(socket virtualsocket.VirtualSocket) (GoBackNProtocolClient, error) {
@@ -76,12 +77,28 @@ func (client GoBackNProtocolClient) sendPacketQueue() {
 	ackChan := make(chan uint8)
 	go client.listenForAcks(ackChan)
 	client.sendBatch(batch)
-	client.highestAckSeqReceived = <-ackChan
+	highestAckSeqReceived := <-ackChan
+
+	// Remove packets up to and including the one with highest seq acked
+	// The searched index is expected to be near the beginning of the slice, so the chosen method is fine.
+	highestAckedIdx := slices.IndexFunc(client.packetQueue, func(p reliability.ReliableDataTransferPacket) bool {
+		return p.Sequence == highestAckSeqReceived
+	})
+
+	if highestAckedIdx != -1 {
+		client.packetQueue = slices.Delete(client.packetQueue, 0, highestAckedIdx+1)
+	}
+
+	if len(client.packetQueue) != 0 {
+		client.sendPacketQueue()
+	} else {
+		log.Println("All packets sent! Shutting down...")
+	}
 }
 
 func (client GoBackNProtocolClient) listenForAcks(ackChannel chan uint8) {
 	log.Print("Listening for acks...")
-	highestAckSeqReceived := client.highestAckSeqReceived
+	var highestAckSeqReceived uint8
 	startTime := time.Now()
 	for time.Now().Sub(startTime) < config.DefaultConfig.GoBackNAckCollectingTime {
 		buffer := make([]byte, 4)
@@ -95,7 +112,6 @@ func (client GoBackNProtocolClient) listenForAcks(ackChannel chan uint8) {
 		}
 		highestAckSeqReceived = ack.Sequence
 	}
-	log.Printf("Highest ack received: %d", highestAckSeqReceived)
 	ackChannel <- highestAckSeqReceived
 }
 
@@ -113,6 +129,7 @@ func (client GoBackNProtocolClient) makeBatch() [][]byte {
 }
 
 func (client GoBackNProtocolClient) sendBatch(batch [][]byte) {
+	log.Printf("%s==== Sending batch ====%s", config.PositiveHighlightColour, config.ResetColour)
 	for _, packet := range batch {
 		client.socket.Send(packet)
 	}

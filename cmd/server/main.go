@@ -14,7 +14,7 @@ func main() {
 	fmt.Println("SERVER")
 
 	addr := net.UDPAddr{
-		IP: net.ParseIP(config.DefaultConfig.IPAddrString),
+		IP:   net.ParseIP(config.DefaultConfig.IPAddrString),
 		Port: config.DefaultConfig.ServerPort,
 	}
 
@@ -28,13 +28,13 @@ func main() {
 	defer socket.Close()
 
 	reliabilityLayer := serverprotocol.NewGoBackNProtocolServer(socket)
+	msgChan := make(chan string)
+
+	go reliabilityLayer.Receive(msgChan)
 
 	for {
-		err := reliabilityLayer.Receive()
-		if err != nil {
-			log.Fatal("lol")
-		}
+		msg := <-msgChan
+		log.Printf("Received message: %s%s%s", config.PositiveHighlightColour, msg, config.ResetColour)
 	}
 
 }
-
